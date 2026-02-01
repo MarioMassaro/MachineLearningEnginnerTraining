@@ -141,7 +141,9 @@ class AzureBlobStorageClient:
         data = self.download_blob(container_name, blob_name)
         
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        dir_path = os.path.dirname(file_path)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
         
         with open(file_path, "wb") as file:
             file.write(data)

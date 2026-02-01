@@ -62,7 +62,9 @@ class AzureConfigManager:
         logger.info(f"Saving configuration to '{file_path}'")
         
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        dir_path = os.path.dirname(file_path)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
         
         with open(file_path, 'w') as f:
             json.dump(self.config, f, indent=2)

@@ -59,6 +59,8 @@ nano config/.env
 
 ## 📝 Configuration
 
+> **⚠️ Security Note**: Never commit sensitive credentials (subscription IDs, tenant IDs, connection strings, secrets) to source control. Always use environment variables or Azure Key Vault for sensitive configuration.
+
 ### Environment Variables
 
 Configure the following environment variables in `config/.env`:
@@ -72,7 +74,14 @@ Configure the following environment variables in `config/.env`:
 
 ### Configuration File
 
-Alternatively, use `config/config.json` for structured configuration management.
+The `config/config.json` file provides structured configuration management for resource names and settings. 
+
+**Important**: This file should NOT contain sensitive credentials. Credentials should be:
+- Loaded from environment variables (using the ConfigManager)
+- Stored in Azure Key Vault
+- Provided via Azure Managed Identity when running in Azure
+
+The configuration file is for non-sensitive settings like resource group names, locations, and container names.
 
 ## 🔧 Usage
 
