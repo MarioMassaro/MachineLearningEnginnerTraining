@@ -105,6 +105,7 @@ resource resultsContainer 'Microsoft.Storage/storageAccounts/blobServices/contai
 }
 
 // App Service Plan for Function App
+// Using Y1 SKU (Consumption/Dynamic plan) for automatic scaling and pay-per-execution pricing
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: appServicePlanName
   location: location

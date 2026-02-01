@@ -62,6 +62,7 @@ class AzureConfigManager:
         logger.info(f"Saving configuration to '{file_path}'")
         
         # Create directory if it doesn't exist
+        # Skip if file_path has no directory component (i.e., file in current directory)
         dir_path = os.path.dirname(file_path)
         if dir_path:
             os.makedirs(dir_path, exist_ok=True)
