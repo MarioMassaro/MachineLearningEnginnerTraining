@@ -1,0 +1,20 @@
+# Azure Deployment Requirements
+# Python packages required for Azure deployment scripts
+
+# Azure SDK
+azure-storage-blob>=12.19.0
+azure-functions>=1.18.0
+azure-identity>=1.15.0
+azure-mgmt-storage>=21.1.0
+azure-mgmt-web>=7.2.0
+azure-mgmt-resource>=23.0.1
+
+# Configuration and utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+
+# Logging and monitoring
+azure-monitor-opentelemetry>=1.0.0
+
+# CLI tools (optional, for local development)
+azure-cli>=2.56.0
