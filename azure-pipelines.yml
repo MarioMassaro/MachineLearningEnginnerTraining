@@ -1,0 +1,41 @@
+﻿trigger:
+  branches:
+    include:
+      - main
+      - master
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  PYTHON_VERSION: "3.11"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "$(PYTHON_VERSION)"
+    displayName: "Use Python $(PYTHON_VERSION)"
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+      pip install pytest
+    displayName: "Install dependencies"
+
+  - script: |
+      pytest -q
+    displayName: "Run tests"
+
+  # Empaquetamos el contenido de src/ como artifact para deploy futuro (zip deploy)
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: "src"
+      includeRootFolder: false
+      archiveType: "zip"
+      archiveFile: "$(Build.ArtifactStagingDirectory)/functionapp.zip"
+      replaceExistingArchive: true
+    displayName: "Package Function App (zip)"
+
+  - publish: "$(Build.ArtifactStagingDirectory)/functionapp.zip"
+    artifact: "drop"
+    displayName: "Publish artifact"
