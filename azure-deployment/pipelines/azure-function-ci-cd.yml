@@ -1,0 +1,94 @@
+# Azure Function App CI/CD Pipeline
+# This pipeline builds, tests, and deploys an Azure Function App
+
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    include:
+    - azure-deployment/**
+    - function-app/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  pythonVersion: '3.9'
+  azureFunctionAppName: '$(AZURE_FUNCTION_APP_NAME)'
+  azureResourceGroup: '$(AZURE_RESOURCE_GROUP)'
+  azureSubscription: '$(AZURE_SUBSCRIPTION)'
+
+stages:
+- stage: Build
+  displayName: 'Build Function App'
+  jobs:
+  - job: BuildJob
+    displayName: 'Build and Package'
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Use Python $(pythonVersion)'
+      inputs:
+        versionSpec: '$(pythonVersion)'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+      displayName: 'Install dependencies'
+      workingDirectory: '$(System.DefaultWorkingDirectory)/function-app'
+    
+    - script: |
+        pip install pytest pytest-cov
+        pytest tests/ --junitxml=test-results.xml --cov=. --cov-report=xml
+      displayName: 'Run tests'
+      workingDirectory: '$(System.DefaultWorkingDirectory)/function-app'
+      continueOnError: true
+    
+    - task: PublishTestResults@2
+      displayName: 'Publish test results'
+      inputs:
+        testResultsFiles: '**/test-results.xml'
+        testRunTitle: 'Python Tests'
+      condition: succeededOrFailed()
+    
+    - task: ArchiveFiles@2
+      displayName: 'Archive function app'
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/function-app'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/function-app.zip'
+    
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish artifacts'
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: 'drop'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure'
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployFunction
+    displayName: 'Deploy Function App'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            displayName: 'Download artifacts'
+            inputs:
+              artifactName: 'drop'
+          
+          - task: AzureFunctionApp@1
+            displayName: 'Deploy Azure Function'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appType: 'functionAppLinux'
+              appName: '$(azureFunctionAppName)'
+              package: '$(System.ArtifactsDirectory)/drop/function-app.zip'
+              runtimeStack: 'PYTHON|$(pythonVersion)'
+              deploymentMethod: 'zipDeploy'

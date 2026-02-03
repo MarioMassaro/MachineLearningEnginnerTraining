@@ -1,0 +1,75 @@
+# Azure Infrastructure Deployment Pipeline
+# This pipeline deploys Azure infrastructure using ARM templates or Bicep
+
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - azure-deployment/infrastructure/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: '$(AZURE_SUBSCRIPTION)'
+  resourceGroupName: '$(AZURE_RESOURCE_GROUP)'
+  location: 'eastus'
+  deploymentName: 'infrastructure-deployment-$(Build.BuildId)'
+
+stages:
+- stage: Validate
+  displayName: 'Validate Infrastructure'
+  jobs:
+  - job: ValidateJob
+    displayName: 'Validate ARM Templates'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Validate ARM template'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az deployment group validate \
+            --resource-group $(resourceGroupName) \
+            --template-file azure-deployment/infrastructure/main.bicep \
+            --parameters azure-deployment/infrastructure/parameters.json
+
+- stage: Deploy
+  displayName: 'Deploy Infrastructure'
+  dependsOn: Validate
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployInfrastructure
+    displayName: 'Deploy Azure Resources'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          
+          - task: AzureCLI@2
+            displayName: 'Create Resource Group'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az group create \
+                  --name $(resourceGroupName) \
+                  --location $(location)
+          
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'Deploy Infrastructure'
+            inputs:
+              azureResourceManagerConnection: '$(azureSubscription)'
+              subscriptionId: '$(AZURE_SUBSCRIPTION_ID)'
+              resourceGroupName: '$(resourceGroupName)'
+              location: '$(location)'
+              csmFile: 'azure-deployment/infrastructure/main.bicep'
+              csmParametersFile: 'azure-deployment/infrastructure/parameters.json'
+              deploymentMode: 'Incremental'
+              deploymentName: '$(deploymentName)'

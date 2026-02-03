@@ -1,0 +1,30 @@
+{
+  "_comment": "This configuration file contains non-sensitive settings only. DO NOT add subscription IDs, tenant IDs, connection strings, or other credentials here. Use environment variables or Azure Key Vault for sensitive data.",
+  "azure": {
+    "resource_group": "ml-training-rg",
+    "location": "eastus",
+    "storage": {
+      "account_name": "mltrainingstore001",
+      "containers": [
+        "ml-models",
+        "training-data",
+        "results"
+      ]
+    },
+    "function_app": {
+      "name": "ml-training-func-app",
+      "runtime": "python",
+      "runtime_version": "3.9",
+      "app_service_plan": "ml-training-plan",
+      "settings": {
+        "PYTHON_VERSION": "3.9",
+        "ENABLE_ORYX_BUILD": "true"
+      }
+    },
+    "tags": {
+      "environment": "dev",
+      "project": "MachineLearningEngineerTraining",
+      "managed_by": "azure-deployment-scripts"
+    }
+  }
+}
